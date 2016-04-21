@@ -31,7 +31,7 @@
  * @return {RegExp}
  */
 function getRegexForGuid() {
-   throw new Error('Not implemented');
+  return /\{[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}\}/i;
 }
 
 
@@ -53,7 +53,7 @@ function getRegexForGuid() {
  *
  */
 function getRegexForPitSpot() {
-   throw new Error('Not implemented');
+  return /p.t/;
 }
 
 
@@ -72,7 +72,10 @@ function getRegexForPitSpot() {
  * @return {RegExp}
  */
 function getRegexForIPv4() {
-   throw new Error('Not implemented');
+  // Two backslashes is for regex generates from string
+  const nTo255 = '([01]?\\d\\d?|2[0-4]\\d|25[0-5])';
+
+  return new RegExp( '^' + nTo255 + '(\.' + nTo255 + '){3}$' );
 }
 
 
@@ -91,7 +94,7 @@ function getRegexForIPv4() {
  * @return {RegExp}
  */
 function getRegexForSSN() {
-   throw new Error('Not implemented');
+  return /(?!0{3})\d{3}-(?!0{2})\d{2}-(?!0{4})\d{4}/;
 }
 
 
@@ -115,15 +118,21 @@ function getRegexForSSN() {
  *   'PASSW0RD'.match(validator)  => false
  *   'Pa55'.match(validator) => false
  */
-function getPasswordValidator(minLength) {
-   throw new Error('Not implemented');
+function getPasswordValidator( minLength ) {
+  const needLowerCase = '(?=.*[a-z])',
+    needUpperCase = '(?=.*[A-Z])',
+    needNum = '(?=.*\\d)',
+    allowedSymbols = '[A-Za-z\\d]',
+    lengthLimit = '{' + minLength + ',}';
+
+  return new RegExp( '^' + needLowerCase + needUpperCase + needNum + allowedSymbols + lengthLimit + '$' );
 }
 
 
 module.exports = {
-    getRegexForGuid: getRegexForGuid,
-    getRegexForPitSpot: getRegexForPitSpot,
-    getRegexForIPv4: getRegexForIPv4,
-    getRegexForSSN: getRegexForSSN,
-    getPasswordValidator: getPasswordValidator
+  getRegexForGuid: getRegexForGuid,
+  getRegexForPitSpot: getRegexForPitSpot,
+  getRegexForIPv4: getRegexForIPv4,
+  getRegexForSSN: getRegexForSSN,
+  getPasswordValidator: getPasswordValidator
 };
