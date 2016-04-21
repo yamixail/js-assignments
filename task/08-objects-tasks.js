@@ -22,10 +22,13 @@
  *    console.log(r.height);      // => 20
  *    console.log(r.getArea());   // => 200
  */
-function Rectangle(width, height) {
-    throw new Error('Not implemented');
+function Rectangle( width, height ) {
+    this.width = width;
+    this.height = height;
+    this.__proto__.getArea = function () {
+        return this.width * this.height;
+    };
 }
-
 
 /**
  * Returns the JSON representation of specified object
@@ -37,8 +40,8 @@ function Rectangle(width, height) {
  *    [1,2,3]   =>  '[1,2,3]'
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
-function getJSON(obj) {
-    throw new Error('Not implemented');
+function getJSON( obj ) {
+    return JSON.stringify( obj );
 }
 
 
@@ -53,8 +56,8 @@ function getJSON(obj) {
  *    var r = fromJSON(Rectangle.prototype, '{"width":10, "height":20}');
  *
  */
-function fromJSON(proto, json) {
-    throw new Error('Not implemented');
+function fromJSON( proto, json ) {
+    return Object.setPrototypeOf( JSON.parse( json ), proto );
 }
 
 
@@ -107,35 +110,108 @@ function fromJSON(proto, json) {
  */
 
 const cssSelectorBuilder = {
+    element: function ( value ) {
+        this.checkCantRepeatedAction( 'element' );
 
-    element: function(value) {
-        throw new Error('Not implemented');
+        return new MySuperBaseElementSelector( {
+            action: 'element',
+            value,
+            context: this
+        } );
     },
 
-    id: function(value) {
-        throw new Error('Not implemented');
+    id: function ( value ) {
+        this.checkCantRepeatedAction( 'id' );
+
+        return new MySuperBaseElementSelector( {
+            action: 'id',
+            value: '#' + value,
+            context: this
+        } );
     },
 
-    class: function(value) {
-        throw new Error('Not implemented');
+    class: function ( value ) {
+        return new MySuperBaseElementSelector( {
+            action: 'class',
+            value: '.' + value,
+            context: this
+        } );
     },
 
-    attr: function(value) {
-        throw new Error('Not implemented');
+    attr: function ( value ) {
+        return new MySuperBaseElementSelector( {
+            action: 'attribute',
+            value: '[' + value + ']',
+            context: this
+        } );
     },
 
-    pseudoClass: function(value) {
-        throw new Error('Not implemented');
+    pseudoClass: function ( value ) {
+        return new MySuperBaseElementSelector( {
+            action: 'pseudo-class',
+            value: ':' + value,
+            context: this
+        } );
     },
 
-    pseudoElement: function(value) {
-        throw new Error('Not implemented');
+    pseudoElement: function ( value ) {
+        this.checkCantRepeatedAction( 'pseudo-element' );
+
+        return new MySuperBaseElementSelector( {
+            action: 'pseudo-element',
+            value: '::' + value,
+            context: this
+        } );
     },
 
-    combine: function(selector1, combinator, selector2) {
-        throw new Error('Not implemented');
+    combine: function ( selector1, combinator, selector2 ) {
+        return new MySuperBaseElementSelector( {
+            action: 'combine',
+            value: `${selector1.stringify()} ${combinator} ${selector2.stringify()}`,
+            context: this
+        } );
     },
+
+    stringify: function () {
+        return this.selector || '';
+    },
+
+    checkCantRepeatedAction: function ( action ) {
+        if ( this.actionsChain && this.actionsChain.indexOf( action ) > -1 )
+            throw new Error( 'Element, id and pseudo-element should not occur more then one time inside the selector' );
+    }
 };
+
+function MySuperBaseElementSelector( options ) {
+    const needActionsSeq = [ 'element', 'id', 'class', 'attribute', 'pseudo-class', 'pseudo-element' ];
+
+    let context = options.context;
+
+    if ( !( 'selector' in context ) ) {
+        this.selector = '';
+        this.actionsChain = [];
+
+        // Extends with cssSelectorBilder methods
+        Object.setPrototypeOf( this, context );
+        // Next chaining method will use this object
+        context = this;
+    }
+
+    // "let chain" just to shorten second expression
+    let chain = context.actionsChain;
+    if ( context.actionsChain.length &&
+        needActionsSeq.indexOf( options.action ) < needActionsSeq.indexOf( chain[ chain.length - 1 ] ) )
+        throw new Error( `Selector parts should be arranged in the following order: ${needActionsSeq.join(', ')}` );
+
+    if ( options.action === 'combine' )
+        context.selector = options.value;
+    else
+        context.selector += options.value;
+
+    context.actionsChain.push( options.action );
+
+    return context;
+}
 
 
 module.exports = {
