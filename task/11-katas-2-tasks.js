@@ -33,8 +33,31 @@
  *   '|_||_  _||_| _||_| _||_| _|\n',
  *
  */
-function parseBankAccount(bankAccount) {
-    throw new Error('Not implemented');
+function parseBankAccount( bankAccount ) {
+    const digitStrs = {
+            ' _ | ||_|': 0,
+            '     |  |': 1,
+            ' _  _||_ ': 2,
+            ' _  _| _|': 3,
+            '   |_|  |': 4,
+            ' _ |_  _|': 5,
+            ' _ |_ |_|': 6,
+            ' _   |  |': 7,
+            ' _ |_||_|': 8,
+            ' _ |_| _|': 9
+        },
+        digitChunks = bankAccount.split( '\n' )
+        .map( el => el.match( /.{3}/g ) );
+
+    return digitChunks[ 0 ].reduce(
+        function ( result, el, i ) {
+            const digitStr = el + digitChunks[ 1 ][ i ] + digitChunks[ 2 ][ i ];
+            if ( !( digitStr in digitStrs ) ) throw new Error( 'Unrecognized number.' );
+
+            return result * 10 + digitStrs[ digitStr ];
+        },
+        0
+    );
 }
 
 
@@ -62,8 +85,14 @@ function parseBankAccount(bankAccount) {
  *                                                                                                'sequence of',
  *                                                                                                'characters.'
  */
-function* wrapText(text, columns) {
-    throw new Error('Not implemented');
+function* wrapText( text, columns ) {
+    const reg = new RegExp( '(\\S.{0,' + ( columns - 1 ) + '})(?=\\s|$)', 'g' );
+
+    let textChunk;
+
+    while ( textChunk = reg.exec( text ) ) {
+        yield textChunk[ 0 ];
+    }
 }
 
 
@@ -99,8 +128,61 @@ const PokerRank = {
     HighCard: 0
 }
 
-function getPokerHandRank(hand) {
-    throw new Error('Not implemented');
+function getPokerHandRank( hand ) {
+    const allRanks = '234567891JQKA',
+
+        handRanks = hand.map( el => el.charAt( 0 ) )
+        .sort( ( a, b ) => allRanks.indexOf( a ) - allRanks.indexOf( b ) ),
+
+        handSuits = hand.map( el => el.charAt( el.length - 1 ) ),
+
+        isFlush = checkFlush( handSuits ),
+        isStraight = checkStraight( handRanks );
+
+    if ( isFlush && isStraight )
+        return PokerRank.StraightFlush;
+
+    const groupedHandRanks = handRanks.join( '' )
+        .match( /((.)\2{0,3})/g );
+
+    if ( groupedHandRanks.some( el => el.length === 4 ) )
+        return PokerRank.FourOfKind;
+
+    if ( groupedHandRanks[ 0 ].length + groupedHandRanks[ 1 ].length === 5 )
+        return PokerRank.FullHouse;
+
+    if ( isFlush )
+        return PokerRank.Flush;
+
+    if ( isStraight )
+        return PokerRank.Straight;
+
+    if ( groupedHandRanks.some( el => el.length === 3 ) )
+        return PokerRank.ThreeOfKind;
+
+    const pairCount = groupedHandRanks.reduce( ( count, el ) => count + ( el.length === 2 ), 0 );
+
+    if ( pairCount === 2 )
+        return PokerRank.TwoPairs;
+
+    if ( pairCount )
+        return PokerRank.OnePair;
+
+    return PokerRank.HighCard;
+
+
+
+    function checkFlush( suits ) {
+        return Array.from( new Set( suits ) )
+            .length === 1;
+    }
+
+    function checkStraight( ranks ) {
+        if ( allRanks.indexOf( ranks.join( '' ) ) > -1 || ranks.join( '' ) === '2345A' )
+            return true;
+
+        return false;
+    }
 }
 
 
@@ -134,13 +216,13 @@ function getPokerHandRank(hand) {
  *    '|             |\n'+              '+-----+\n'           '+-------------+\n'
  *    '+-------------+\n'
  */
-function* getFigureRectangles(figure) {
-   throw new Error('Not implemented');
+function* getFigureRectangles( figure ) {
+    throw new Error( 'Not implemented' );
 }
 
 
 module.exports = {
-    parseBankAccount : parseBankAccount,
+    parseBankAccount: parseBankAccount,
     wrapText: wrapText,
     PokerRank: PokerRank,
     getPokerHandRank: getPokerHandRank,
