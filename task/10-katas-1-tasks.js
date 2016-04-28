@@ -30,7 +30,7 @@ function createCompassPoints() {
             semiDirection,
             abbreviation;
 
-        // N and S is lead directions
+        // South and North is lead directions
         if ( sides.indexOf( leftDirection ) % 2 )
             semiDirection = rightDirection + leftDirection;
         else
@@ -41,7 +41,7 @@ function createCompassPoints() {
         if ( localAzim >= 45 ) {
             localAzim = 90 - localAzim;
 
-            let temp = leftDirection;
+            const temp = leftDirection;
             leftDirection = rightDirection;
             rightDirection = temp;
         }
@@ -237,23 +237,21 @@ function canDominoesMakeRow( dominoes ) {
         }, () => [] ) );
 
     let i,
-        withoutPair = 0,
-        nakedFish = false;
+        withoutPair = 0;
 
     for ( i = 0; i < dominoesByNum.length; i++ ) {
+        if ( !dominoesByNum[ i ].length ) continue;
+
         const excludeFish = dominoesByNum[ i ].filter( el => ( el !== i ) ),
             fishCount = dominoesByNum[ i ].length - excludeFish.length;
 
         if ( excludeFish.length > 0 )
             withoutPair += excludeFish.length % 2;
         else if ( fishCount > 0 )
-            nakedFish = true;
+            return dominoes.length === fishCount;
 
         if ( withoutPair > 2 ) return false;
     }
-
-    if ( nakedFish && dominoes.length > 1 )
-        return false;
 
     return true;
 }

@@ -29,7 +29,6 @@
  */
 function findStringInSnakingPuzzle( puzzle, searchStr ) {
     const puzzleArr = puzzle.map( el => el.split( '' ) ),
-        getLettersAround = [ getTopLetter, getRightLetter, getBottomLetter, getLeftLetter ],
         firstChar = searchStr.charAt( 0 );
 
     let row, coll;
@@ -38,7 +37,10 @@ function findStringInSnakingPuzzle( puzzle, searchStr ) {
         for ( coll = 0; coll < puzzleArr[ row ].length; coll++ ) {
 
             if ( puzzleArr[ row ][ coll ] === firstChar &&
-                snakeFind( row, coll, searchStr.slice( 1 ), [ [ row, coll ] ] ) )
+                snakeFind( row, coll, searchStr.slice( 1 ), [ {
+                    row,
+                    coll
+                } ] ) )
                 return true;
 
         }
@@ -52,20 +54,25 @@ function findStringInSnakingPuzzle( puzzle, searchStr ) {
         let i,
             findLetter = searchStr.charAt( 0 );
 
-        const lettersAround = getLettersAround.map( fn => fn.call( null, row, coll ) )
-            .filter( el => el !== null && el.letter === findLetter )
-            .filter(
-                el => blockedCells.every(
-                    blockedCell => blockedCell[ 0 ] !== el.row || blockedCell[ 1 ] !== el.coll
-                )
-            );
+        const getLettersAround = [ getTopLetter, getRightLetter, getBottomLetter, getLeftLetter ],
+            lettersAround = getLettersAround.map( fn => fn.call( null, row, coll ) )
+            .filter( function ( el ) {
+                if ( el === null || el.letter !== findLetter ||
+                    blockedCells.some( blockedCell => blockedCell.row === el.row && blockedCell.coll === el.coll ) )
+                    return false;
+
+                return true;
+            } );
 
 
         for ( i = 0; i < lettersAround.length; i++ ) {
             const r = lettersAround[ i ].row,
                 c = lettersAround[ i ].coll;
 
-            blockedCells.push( [ r, c ] );
+            blockedCells.push( {
+                row: r,
+                coll: c
+            } );
 
             if ( snakeFind( r, c, searchStr.slice( 1 ), blockedCells ) )
                 return true;
@@ -205,10 +212,10 @@ UrlShortener.prototype = {
     // ['I', 'J', 'K', 'L', 'M'] => 
     // [ '08', '09', '10', '11', '12'] =>
     // ['0809', '1011', '12'] =>
-    // pack two letters in one byte by String.fromCodePoint
+    // pack two (last can be one) letters in one byte by String.fromCodePoint
     encode: function ( url ) {
-        const codeArr = Array.from( url )
-            .map( letter => this.getXXPosition( letter ) );
+        const codeArr = url.split( '' )
+            .map( letter => this.getCharXXPosition( letter ) );
 
         const compressedCodes = codeArr.reduce(
             function ( result, code ) {
@@ -226,7 +233,7 @@ UrlShortener.prototype = {
         return String.fromCodePoint.apply( String, compressedCodes );
     },
 
-    getXXPosition: function ( char ) {
+    getCharXXPosition: function ( char ) {
         let index = this.urlAllowedChars.indexOf( char );
 
         if ( index === -1 ) throw new Error( `Disallowed char "${char}"` );
@@ -250,14 +257,14 @@ UrlShortener.prototype = {
             }, []
         );
 
-        return codeArr.map( position => this.getCharByPosition( position ) )
+        return codeArr.map( position => this.getCharByXXPosition( position ) )
             .join( '' );
     },
 
-    getCharByPosition: function ( position ) {
+    getCharByXXPosition: function ( position ) {
         const char = this.urlAllowedChars[ parseInt( position ) ];
 
-        if ( !char ) throw new Error( `Invalid code.` );
+        if ( !char ) throw new Error( 'Invalid code.' );
 
         return char;
     }
