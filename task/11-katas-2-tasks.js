@@ -34,7 +34,7 @@
  *
  */
 function parseBankAccount( bankAccount ) {
-    const digitStrs = {
+    const digitMap = {
             ' _ | ||_|': 0,
             '     |  |': 1,
             ' _  _||_ ': 2,
@@ -52,9 +52,10 @@ function parseBankAccount( bankAccount ) {
     return digitChunks[ 0 ].reduce(
         function ( result, el, i ) {
             const digitStr = el + digitChunks[ 1 ][ i ] + digitChunks[ 2 ][ i ];
-            if ( !( digitStr in digitStrs ) ) throw new Error( 'Unrecognized number.' );
+            if ( !( digitStr in digitMap ) )
+                throw new Error( 'Unrecognized number.' );
 
-            return result * 10 + digitStrs[ digitStr ];
+            return result * 10 + digitMap[ digitStr ];
         },
         0
     );
@@ -86,7 +87,7 @@ function parseBankAccount( bankAccount ) {
  *                                                                                                'characters.'
  */
 function* wrapText( text, columns ) {
-    const reg = new RegExp( '(\\S.{0,' + ( columns - 1 ) + '})(?=\\s|$)', 'g' );
+    const reg = new RegExp( '(?!\\s)(.{1,' + columns + '})(?=\\s|$)', 'g' );
 
     let textChunk;
 
@@ -217,7 +218,106 @@ function getPokerHandRank( hand ) {
  *    '+-------------+\n'
  */
 function* getFigureRectangles( figure ) {
-    throw new Error( 'Not implemented' );
+    const figureRows = figure.split( '\n' );
+
+    // fix \n at the end of figure
+    if ( figureRows[ figureRows.length - 1 ] === '' ) figureRows.pop();
+
+    const figureArr = figureRows.map( el => el.split( '' ) );
+
+    let figureColls = Array.from( {
+            length: figureRows[ 0 ].length
+        }, () => '' ),
+
+        row, coll,
+        plusesPos = [];
+
+    for ( row = 0; row < figureArr.length; row++ ) {
+        for ( coll = 0; coll < figureArr[ row ].length; coll++ ) {
+            const char = figureArr[ row ][ coll ];
+
+            figureColls[ coll ] += char;
+
+            if ( char === '+' )
+                plusesPos.push( {
+                    row,
+                    coll
+                } );
+        }
+    }
+
+    let i;
+    for ( i = 0; i < plusesPos.length; i++ ) {
+        const res = findRect( plusesPos[ i ].row, plusesPos[ i ].coll );
+
+        if ( res )
+            yield * drawRect( res );
+    }
+
+    function findRect( topRow, leftColl ) {
+        let topLine = findInRow( topRow, leftColl ),
+            leftLine = findInColl( leftColl, topRow );
+
+        while ( topLine && leftLine ) {
+            const rightColl = leftColl + topLine.length - 1,
+                bottomRow = topRow + leftLine.length - 1;
+
+            const rightLine = figureColls[ rightColl ].slice( topRow, bottomRow + 1 ),
+                bottomLine = figureRows[ bottomRow ].slice( leftColl, rightColl + 1 );
+
+            if ( !checkColl( rightLine ) ) {
+                const topAddition = findInRow( topRow, rightColl );
+
+                if ( !topAddition ) break;
+                topLine += topAddition.slice( 1 );
+            } else if ( !checkRow( bottomLine ) ) {
+                const leftAddition = findInColl( leftColl, bottomRow );
+
+                if ( !leftAddition ) break;
+                leftLine += leftAddition.slice( 1 );
+            } else
+                return {
+                    width: topLine.length,
+                    height: leftLine.length
+                };
+        }
+
+        return false;
+
+        function findInRow( rowN, startIndex ) {
+            const result = figureRows[ rowN ].slice( startIndex )
+                .match( /^\+-*?\+/ );
+
+            return result && result[ 0 ];
+        }
+
+        function findInColl( collN, startIndex ) {
+            const result = figureColls[ collN ].slice( startIndex )
+                .match( /^\+\|*?\+/ );
+
+            return result && result[ 0 ];
+        }
+
+        function checkRow( str ) {
+            return /^\+[-\+]*\+$/.test( str );
+        }
+
+        function checkColl( str ) {
+            return /^\+[\|\+]*\+$/.test( str );
+        }
+    }
+
+    function* drawRect( options ) {
+        const innerW = options.width - 2,
+            innerH = options.height - 2;
+
+        let rectangle = `+${'-'.repeat(innerW)}+\n`;
+
+        rectangle += `|${' '.repeat(innerW)}|\n`.repeat( innerH );
+        rectangle += `+${'-'.repeat(innerW)}+\n`;
+
+        yield rectangle;
+    }
 }
 
 
